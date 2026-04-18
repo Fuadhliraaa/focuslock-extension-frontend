@@ -1,4 +1,4 @@
-const DURATION_LIMIT = 30 * 1000;
+import { isOverrideActive } from "./core/override.js";
 
 let isRedirecting = false;
 
@@ -8,40 +8,18 @@ chrome.runtime.onInstalled.addListener(() => {
     goals: {
       mainGoal: "Build SaaS 1M USD Value",
       reason: "Financial Freedom n more time with family"
-    },
-    overrideUsage: {
-      count: 0,
-      lastResetDate: new Date().toISOString().split("T")[0]
-    },
-    override: {
-      active: false,
-      startTime: null
     }
   });
 });
 
-function handleBlockingLogic(tabId, url) {
+async function handleBlockingLogic(tabId, url) {
   if (!url || url.includes("blocking.html") || isRedirecting) return;
 
-  chrome.storage.local.get(["blockedSites", "override"], (data) => {
+  const isActive = await isOverrideActive();
+  if (isActive) return;
+
+  chrome.storage.local.get(["blockedSites"], (data) => {
     const blockedSites = data.blockedSites || [];
-    let override = data.override;
-
-    const now = Date.now();
-    let isOverrideActive = false;
-
-    if (override && override.active && override.startTime) {
-      const duration = now - override.startTime;
-
-      if (duration < DURATION_LIMIT) {
-        isOverrideActive = true;
-      } else {
-        override = { active: false, startTime: null };
-        chrome.storage.local.set({ override });
-      }
-    }
-
-    if (isOverrideActive) return;
 
     const isBlocked = blockedSites.some(site => url.includes(site));
 

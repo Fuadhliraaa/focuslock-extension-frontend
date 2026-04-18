@@ -1,69 +1,63 @@
-document.addEventListener("DOMContentLoaded", () => {
+import { getData } from "./core/storage.js";
 
-  // ===============================
-  // 🧠 LOAD GOALS
-  // ===============================
+import {
+  resetOverrideIfNeeded,
+  canUseOverride,
+  useOverride,
+  getOverrideLeft,
+  activateOverride,
+  resetOverrideDev
+} from "./core/override.js";
+
+const IS_DEV = true;
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+  await resetOverrideIfNeeded();
+
+  const left = await getOverrideLeft();
+  document.getElementById("override-info").innerText =
+    `Override left: ${left}/3`;
+
+  if (IS_DEV) {
+    const resetBtn = document.getElementById("resetOverrideBtn");
+
+    resetBtn.style.display = "block";
+
+    resetBtn.addEventListener("click", async () => {
+      await resetOverrideDev();
+
+      const left = await getOverrideLeft();
+      document.getElementById("override-info").innerText =
+        `Override left: ${left}/3`;
+    });
+  }
+
   chrome.storage.local.get(["goals"], (data) => {
-    const goal = data.goals?.mainGoal || "No goal set";
-    const reason = data.goals?.reason || "No reason set";
+    document.getElementById("goal").textContent =
+      data.goals?.mainGoal || "No goal set";
 
-    document.getElementById("goal").textContent = goal;
-    document.getElementById("reason").textContent = reason;
+    document.getElementById("reason").textContent =
+      data.goals?.reason || "No reason set";
   });
 
   const overrideBtn = document.getElementById("overrideBtn");
 
-  overrideBtn.addEventListener("click", () => {
+  overrideBtn.addEventListener("click", async () => {
+    await resetOverrideIfNeeded();
 
-    const today = new Date().toISOString().split("T")[0];
+    if (!(await canUseOverride())) {
+      alert("Override limit reached today!");
+      return;
+    }
 
-    chrome.storage.local.get(["overrideUsage"], (data) => {
+    await useOverride();
+    await activateOverride();
 
-      let usage = data.overrideUsage || {
-        count: 0,
-        lastResetDate: today
-      };
-
-      // Reset kalau hari baru
-      if (usage.lastResetDate !== today) {
-        usage.count = 0;
-        usage.lastResetDate = today;
-      }
-
-      // Limit tercapai
-      if (usage.count >= 3) {
-        chrome.storage.local.set({
-          override: {
-            active: false,
-            startTime: null
-          }
-        }, () => {
-          alert("Override limit reached today!");
-        });
-        return;
-      }
-
-      usage.count += 1;
-
-      const now = Date.now();
-
-      chrome.storage.local.set({
-        override: {
-          active: true,
-          startTime: now
-        },
-        overrideUsage: usage
-      }, () => {
-
-        chrome.storage.local.get(["lastBlockedUrl"], (data) => {
-          const targetUrl = data.lastBlockedUrl || "https://youtube.com";
-          window.location.href = targetUrl;
-        });
-
-      });
-
+    chrome.storage.local.get(["lastBlockedUrl"], (data) => {
+      const targetUrl = data.lastBlockedUrl || "https://youtube.com";
+      window.location.href = targetUrl;
     });
-
   });
 
 });
