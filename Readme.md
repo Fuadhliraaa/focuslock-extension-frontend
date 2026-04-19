@@ -1,51 +1,97 @@
-# FocusLock - Chrome Extension (MVP v1)
+# FocusLock Chrome Extension
 
-## 🎯 Overview
-FocusLock is a Chrome Extension designed to help users reduce distraction by blocking access to selected websites and reminding them of their goals.
-
----
-
-## 🚀 Problem
-Users often get distracted by websites like YouTube, TikTok, and social media during work or study sessions.
+FocusLock is a behavior-driven Chrome extension designed to reduce distractions without being overly restrictive. It combines limited access, behavioral tracking, and adaptive friction to help users stay focused.
 
 ---
 
-## 💡 Solution
-Instead of just blocking access, FocusLock:
-- Interrupts distraction
-- Reminds users of their goals
-- Allows limited override with control
+## 🚀 Current Version: MVP 1.5
+
+### 🔥 Core Features
+
+#### 1. Blocking Engine
+- Blocks distracting websites (YouTube, etc.)
+- Handles SPA navigation (e.g., YouTube routing)
+
+#### 2. Override System
+- 3 overrides per day
+- Each override grants limited access (30 seconds)
+- Tab-scoped override (not global)
+
+#### 3. Streak System
+- Tracks daily discipline
+- Resets when override limit is exceeded
+
+#### 4. Behavior Detection
+- Detects rapid return patterns
+- Tracks user impulsive behavior
+
+#### 5. Soft Enforcement
+- Adds delay before override based on behavior
+- Escalates friction:
+  - Normal → no delay
+  - Rapid return → delay
+  - Abuse → temporary lock
+
+#### 6. Smart Auto-Kick
+- Allows passive usage (music/podcast)
+- Blocks navigation change (new tab / new video)
+
+#### 7. UX Clarity Improvements
+- Clear status display (override left, streak)
+- Goal & reason visibility
+- State message (focus mode, limit reached, etc.)
+- Behavior feedback messaging
+- Guide explanation for user understanding
+
+#### 8. Tab Timer (NEW)
+- Shows remaining override time directly in browser tab title
+- Helps user stay aware without relying on blocking page
 
 ---
 
-## ⚙️ Features (MVP v1)
+## 🧠 Product Philosophy
 
-### 1. Website Blocking Engine
-- Detects URL navigation
-- Redirects blocked sites to a custom blocking page
+FocusLock is not a strict blocker.
 
-### 2. Goal Reminder
-- Displays user's main goal and reason
-- Reinforces focus intention
+It is a **behavior control system** that:
+- allows controlled access
+- detects patterns
+- adapts responses
+- guides users toward better habits
 
-### 3. Override System
-- Temporary access (time-based)
-- Default duration: configurable (testing: 30s, prod: 5 min)
+---
 
-### 4. Daily Limit
-- Max 3 overrides per day
-- Prevents abuse
+## 📁 Project Structure
+core/
+storage.js
+override.js
+streak.js
+behavior.js
 
-### 5. Anti-Bypass Protection
-- Handles:
-  - Refresh
-  - Back button
-  - SPA navigation (YouTube, Shorts)
-- Uses:
-  - webNavigation.onCompleted
-  - webNavigation.onHistoryStateUpdated
+background.js
+blocking.js
+blocking.html
+content.js
 
-### 6. Local Storage System
-Stored in:
-```js
-chrome.storage.local
+---
+
+## 🛠 Tech Stack
+
+- Chrome Extension (Manifest V3)
+- Vanilla JavaScript
+- Chrome Storage API
+
+---
+
+## 📌 Next Roadmap
+
+- Analytics dashboard
+- User-configurable goals
+- Sync (SaaS backend)
+- AI behavior assistant
+
+---
+
+## ⚠️ Notes
+
+This project is currently in MVP stage and focused on validating user behavior impact before scaling further.

@@ -1,51 +1,47 @@
-const DURATION_LIMIT = 30 * 1000;
+import { isOverrideActive } from "./core/override.js";
+import { getData } from "./core/storage.js";
+import { trackBehavior } from "./core/behavior.js";
 
 let isRedirecting = false;
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.local.set({
-    blockedSites: ["youtube.com", "tiktok.com"],
-    goals: {
-      mainGoal: "Build SaaS 1M USD Value",
-      reason: "Financial Freedom n more time with family"
-    },
-    overrideUsage: {
-      count: 0,
-      lastResetDate: new Date().toISOString().split("T")[0]
-    },
-    override: {
-      active: false,
-      startTime: null
-    }
+    blockedSites: ["youtube.com", "tiktok.com"]
   });
 });
 
-function handleBlockingLogic(tabId, url) {
+async function handleBlockingLogic(tabId, url) {
   if (!url || url.includes("blocking.html") || isRedirecting) return;
 
-  chrome.storage.local.get(["blockedSites", "override"], (data) => {
-    const blockedSites = data.blockedSites || [];
-    let override = data.override;
+  const isActive = await isOverrideActive();
 
-    const now = Date.now();
-    let isOverrideActive = false;
+  chrome.storage.local.get(
+    ["blockedSites", "overrideTabId"],
+    async (storageData) => {
 
-    if (override && override.active && override.startTime) {
-      const duration = now - override.startTime;
+      const blockedSites = storageData.blockedSites || [];
+      const overrideTabId = storageData.overrideTabId;
 
-      if (duration < DURATION_LIMIT) {
-        isOverrideActive = true;
-      } else {
-        override = { active: false, startTime: null };
-        chrome.storage.local.set({ override });
+      const data = await getData();
+      const allowedUrl = data.override.allowedUrl;
+
+      const isBlocked = blockedSites.some((site) =>
+        url.includes(site)
+      );
+
+      // 🧠 override only for same tab + same context
+      if (isActive && tabId === overrideTabId) {
+        if (allowedUrl && url.includes(allowedUrl)) {
+          return;
+        }
       }
-    }
 
-    if (isOverrideActive) return;
+      if (!isBlocked) return;
 
-    const isBlocked = blockedSites.some(site => url.includes(site));
+      // 🔥 behavior tracking (modular now)
+      await trackBehavior();
 
-    if (isBlocked) {
+      // 🚫 redirect
       isRedirecting = true;
 
       chrome.storage.local.set({ lastBlockedUrl: url });
@@ -58,15 +54,12 @@ function handleBlockingLogic(tabId, url) {
         isRedirecting = false;
       }, 500);
     }
-  });
+  );
 }
 
-chrome.webNavigation.onCompleted.addListener((details) => {
-  if (details.frameId !== 0) return;
-
-  chrome.tabs.get(details.tabId, (tab) => {
-    if (tab?.url) handleBlockingLogic(details.tabId, tab.url);
-  });
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status !== "complete" || !tab.url) return;
+  handleBlockingLogic(tabId, tab.url);
 });
 
 chrome.webNavigation.onHistoryStateUpdated.addListener((details) => {

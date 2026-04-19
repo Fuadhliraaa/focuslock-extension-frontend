@@ -2,15 +2,29 @@
   "manifest_version": 3,
   "name": "FocusLock",
   "version": "1.0",
-
-  "permissions": ["storage", "tabs", "webNavigation"],
-  "host_permissions": ["<all_urls>"],
-
+  "permissions": [
+    "storage",
+    "tabs",
+    "webNavigation"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
-
   "action": {
     "default_popup": "popup.html"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ]
 }
