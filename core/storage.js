@@ -22,6 +22,11 @@ const DEFAULT_DATA = {
     rapidReturnCount: 0
   },
 
+  goals: {
+    mainGoal: "Stay focused.",
+    reason: "Avoid distraction."
+  },
+
   settings: {
     autoKick: false
   }

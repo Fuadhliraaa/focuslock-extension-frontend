@@ -1,4 +1,7 @@
-import { updateData, getData } from "./storage.js";
+import { updateData, getData, setData } from "./storage.js";
+import { breakStreakNow } from "./streak.js";
+
+const OVERRIDE_DURATION = 30 * 1000;
 
 export async function resetOverrideIfNeeded() {
   await updateData((data) => {
@@ -19,17 +22,25 @@ export async function canUseOverride() {
 }
 
 export async function useOverride() {
-  let allowed = false;
+  const data = await getData();
 
-  await updateData((data) => {
-    if (data.override.usedToday < data.override.maxPerDay) {
-      data.override.usedToday += 1;
-      allowed = true;
-    }
-    return data;
-  });
+  // 🚫 HARD GUARD
+  if (data.override.usedToday >= data.override.maxPerDay) {
+    return false;
+  }
 
-  return allowed;
+  data.override.usedToday += 1;
+
+  const reachedLimit =
+    data.override.usedToday >= data.override.maxPerDay;
+
+  await setData(data);
+
+  if (reachedLimit) {
+    await breakStreakNow(); // ✅ now safe
+  }
+
+  return true;
 }
 
 export async function getOverrideLeft() {
@@ -39,10 +50,11 @@ export async function getOverrideLeft() {
 
 const DURATION_LIMIT = 30 * 1000;
 
-export function activateOverride() {
-  updateData((data) => {
+export async function activateOverride(url) {
+  await updateData((data) => {
     data.override.active = true;
     data.override.startTime = Date.now();
+    data.override.allowedUrl = url; // 🔥 penting
     return data;
   });
 }
